@@ -1,10 +1,13 @@
-import { Resolver, ResolveField, Parent, Context } from '@nestjs/graphql';
-import { AccountType } from '../types/account.type';
+import { Resolver, ResolveField, Parent, Context, Query, Args } from '@nestjs/graphql';
+import { AccountPaginationType, AccountType } from '../types/account.type';
 import { AbilityType, PermissionType } from '../types/permission.type';
 import { AccountTransactionType } from '../types/accont_transaction.type';
 import { PermissionService } from '../../services/permission.service';
 import { AccountTransactionService } from '../../services/account_transactions.service';
 import { AbilityService } from '../../services/ability.service';
+import { PaginationInputType } from 'src/shared/gql/types/pagination.type';
+import { AccountService } from 'src/users/services/account.service';
+import { SortingInputType } from 'src/shared/gql/types/sorting.type';
 
 
 @Resolver(() => AccountType)
@@ -13,7 +16,17 @@ export class AccountResolver {
     private readonly permissionService: PermissionService,
     private readonly accountTransactionService: AccountTransactionService,
     private readonly abilityService: AbilityService,
+    private readonly accountService: AccountService,
   ) {}
+
+  @Query(() => AccountPaginationType, { description: 'Получение списка аккаунтов с пагинацией и сортировкой' })
+  async getAccounts(
+    @Args('paginationInput', { type: () => PaginationInputType }) paginationInput: PaginationInputType,
+    @Args('sortingInput', { type: () => SortingInputType, nullable: true }) sortingInput?: SortingInputType,
+  ): Promise<AccountPaginationType> {
+    const result = await this.accountService.findPaginatedAccounts(paginationInput, sortingInput);
+    return result;
+  }
 
   @ResolveField(() => [PermissionType], { nullable: true })
   async permissions(@Parent() account: AccountType, @Context() context: any) {
